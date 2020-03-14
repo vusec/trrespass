@@ -273,11 +273,16 @@ void fill_stripe(DRAMAddr d_addr, uint8_t val, ADDRMapper * mapper)
 
 }
 
-void fill_row(HammerSuite * suite, DRAMAddr * d_addr, HammerData data_patt)
+void fill_row(HammerSuite *suite, DRAMAddr *d_addr, HammerData data_patt, int reverse)
 {
 	if (p->vpat != (void *)NULL && p->tpat != (void *)NULL) {
-		fill_stripe(*d_addr, (uint8_t) * p->tpat, suite->mapper);
+		uint8_t pat = reverse ? *p->vpat : *p->tpat;
+		fill_stripe(*d_addr, pat, suite->mapper);
 		return;
+	}
+
+	if (reverse) {
+		data_patt = (HammerData)((int)data_patt ^(int)REVERSE);
 	}
 
 	switch (data_patt) {
@@ -587,15 +592,14 @@ int free_triple_sided_test(HammerSuite * suite)
 				h_patt.d_lst[2].bank = bk;
 				// fill all the aggressor rows
 				for (int idx = 0; idx < 3; idx++) {
-					fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg);
+					fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg, 0);
 				}
 				uint64_t time = hammer_it(&h_patt, mem);
 				fprintf(stderr, "%ld ", time);
 
 				scan_rows(suite, &h_patt, 0);
 				for (int idx = 0; idx < 3; idx++) {
-					fill_row(suite, &h_patt.d_lst[idx], (HammerData) ((int)cfg->
-								d_cfg ^ (int) REVERSE));
+					fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg, 1);
 				}
 			}
 			fprintf(stderr, "\n");
@@ -646,7 +650,7 @@ int assisted_double_sided_test(HammerSuite * suite)
 			h_patt.d_lst[2].bank = bk;
 			// fill all the aggressor rows
 			for (int idx = 0; idx < 3; idx++) {
-				fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg);
+				fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg, 0);
 				// fprintf(stderr, "d_addr: %s\n", dram_2_str(&h_patt.d_lst[idx]));
 			}
 			// fprintf(stderr, "d_addr: %s\n", dram_2_str(&h_patt.d_lst[idx]));
@@ -655,7 +659,7 @@ int assisted_double_sided_test(HammerSuite * suite)
 
 			scan_rows(suite, &h_patt, 0);
 			for (int idx = 0; idx<3; idx++) {
-				  fill_row(suite, &h_patt.d_lst[idx],     (HammerData) ((int)cfg->d_cfg ^ (int)REVERSE));
+				fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg, 1);
 			}
 		}
 		fprintf(stderr, "\n");
@@ -707,7 +711,7 @@ int n_sided_test(HammerSuite * suite)
 #endif
 			// fill all the aggressor rows
 			for (int idx = 0; idx < cfg->aggr_n; idx++) {
-				fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg);
+				fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg, 0);
 			}
 
 			uint64_t time = hammer_it(&h_patt, mem);
@@ -715,8 +719,7 @@ int n_sided_test(HammerSuite * suite)
 
 			scan_rows(suite, &h_patt, 0);
 			for (int idx = 0; idx<h_patt.len; idx++) {
-				fill_row(suite, &h_patt.d_lst[idx],	(HammerData)
-						((int)cfg->d_cfg ^ (int)REVERSE));
+				fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg, 1);
 #ifdef FLIPTABLE
 				print_end_attack();
 #endif
@@ -767,15 +770,14 @@ void fuzz(HammerSuite *suite, int d, int v)
 		print_start_attack(&h_patt);
 #endif
 		for (int idx = 0; idx < h_patt.len; idx++)
-			fill_row(suite, &h_patt.d_lst[idx], suite->cfg->d_cfg);
+			fill_row(suite, &h_patt.d_lst[idx], suite->cfg->d_cfg, 0);
 
 		uint64_t time = hammer_it(&h_patt, suite->mem);
 		fprintf(stderr, "%lu ",time);
 
 		scan_rows(suite, &h_patt, 0);
 		for (int idx = 0; idx<h_patt.len; idx++) {
-			fill_row(suite, &h_patt.d_lst[idx],	(HammerData)
-					((int)suite->cfg->d_cfg ^ (int)REVERSE));
+			fill_row(suite, &h_patt.d_lst[idx], suite->cfg->d_cfg, 1);
 		}
 
 #ifdef FLIPTABLE
