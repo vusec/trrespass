@@ -720,10 +720,10 @@ int n_sided_test(HammerSuite * suite)
 			scan_rows(suite, &h_patt, 0);
 			for (int idx = 0; idx<h_patt.len; idx++) {
 				fill_row(suite, &h_patt.d_lst[idx], cfg->d_cfg, 1);
+			}
 #ifdef FLIPTABLE
 				print_end_attack();
 #endif
-			}
 		}
 		fprintf(stderr, "\n");
 	}
